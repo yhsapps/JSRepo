@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f0ea">
+<meta name="description" content="Standalone used Tesla walkaround inspection checklist">
+<title>Used Tesla Walkaround</title>
+<style>
+:root{
+  --bg:#f3f0ea;--bg-elevated:#fffcf7;--surface:#e7e2d8;--fg:#16181c;
+  --muted:#5c5f66;--subtle:#8a8d94;--border:rgba(22,24,28,.12);
+  --primary:#c41e3a;--primary-fg:#fff7f7;
+  --first:#3d6a8a;--first-soft:rgba(61,106,138,.14);
+  --exterior:#9a6238;--exterior-soft:rgba(154,98,56,.14);
+  --interior:#3d6e58;--interior-soft:rgba(61,110,88,.14);
+  --pass:#2f6e4e;--pass-soft:rgba(47,110,78,.14);
+  --fail:#c41e3a;--fail-soft:rgba(196,30,58,.12);
+  --shadow:0 0 0 1px rgba(22,24,28,.08),0 1px 2px rgba(22,24,28,.06),0 12px 32px rgba(22,24,28,.04);
+}
+.dark{
+  --bg:#101114;--bg-elevated:#181a1e;--surface:#22242a;--fg:#f1efe8;
+  --muted:#a8abb3;--subtle:#7a7e86;--border:rgba(241,239,232,.12);
+  --primary:#e23d52;--primary-fg:#fff7f7;
+  --first:#7eabcc;--first-soft:rgba(126,171,204,.16);
+  --exterior:#d4a074;--exterior-soft:rgba(212,160,116,.16);
+  --interior:#7eb89a;--interior-soft:rgba(126,184,154,.16);
+  --pass:#6fbf93;--pass-soft:rgba(111,191,147,.16);
+  --fail:#e85a6b;--fail-soft:rgba(232,90,107,.16);
+  --shadow:0 0 0 1px rgba(241,239,232,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;color-scheme:light}
+html.dark{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 35%,transparent);outline-offset:2px}
+.topbar{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px)}
+.container{width:100%;max-width:760px;margin:auto;padding-left:16px;padding-right:16px}
+.toprow{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+.mark{width:36px;height:36px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:var(--primary-fg);font-weight:800;font-size:20px}
+.brand{min-width:0;flex:1}
+.eyebrow,.section-kicker,.group-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.brand h1{margin:0;font-size:18px;line-height:1.1}
+.progress-ring{width:44px;height:44px;position:relative;display:grid;place-items:center;flex:none}
+.progress-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.progress-ring circle{fill:none;stroke-width:3.5}
+.progress-bg{stroke:var(--surface)}.progress-fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset .25s ease}
+.progress-number{font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.icon-btn{border:0;background:transparent;color:var(--fg);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:19px}
+.icon-btn:hover{background:var(--surface)}
+.segmentbar{height:6px;display:flex;overflow:hidden;border-radius:999px;background:var(--surface)}
+.seg{height:100%}.seg.first{background:var(--first)}.seg.exterior{background:var(--exterior)}.seg.interior{background:var(--interior)}
+.progress-text{margin:7px 0 10px;color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;border-radius:999px;padding:9px 14px;white-space:nowrap;font-size:14px;font-weight:650;color:var(--muted);background:var(--surface)}
+.tab.active.first{background:var(--first);color:var(--primary-fg)}
+.tab.active.exterior{background:var(--exterior);color:var(--primary-fg)}
+.tab.active.interior{background:var(--interior);color:var(--primary-fg)}
+main{display:flex;flex-direction:column;gap:20px;padding-top:20px;padding-bottom:110px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter{border:0;border-radius:999px;padding:9px 14px;background:var(--bg-elevated);color:var(--muted);box-shadow:var(--shadow);font-size:14px;font-weight:650}
+.filter.active{background:var(--fg);color:var(--bg)}
+.legend{width:100%;display:flex;gap:10px;align-items:center;color:var(--subtle);font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated)}
+.dot.pass{background:var(--pass);border:0}.dot.fail{background:var(--fail);border:0}
+.card{border-radius:14px;background:var(--bg-elevated);box-shadow:var(--shadow);overflow:hidden}
+.vehicle-toggle{width:100%;border:0;background:transparent;color:var(--fg);display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px}
+.vehicle-toggle .vehicle-summary{min-width:0;flex:1}
+.vehicle-value{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vehicle-save{font-size:11px;color:var(--subtle);white-space:nowrap}
+.chevron{transition:transform .15s ease;color:var(--subtle)}.chevron.open{transform:rotate(180deg)}
+.vehicle-body{display:none;padding:2px 16px 16px;gap:13px}.vehicle-body.open{display:grid}
+.field{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650}
+input,textarea{width:100%;border:1px solid var(--border);border-radius:9px;background:var(--bg-elevated);color:var(--fg);padding:11px 12px}
+input:focus,textarea:focus{border-color:var(--primary)}
+.vin{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
+.models{display:flex;flex-wrap:wrap;gap:8px}
+.model{border:0;border-radius:999px;min-width:42px;padding:9px 14px;background:var(--surface);color:var(--muted);font-size:14px;font-weight:650}
+.model.active{background:var(--fg);color:var(--bg)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.complete{padding:12px 14px;border-radius:12px;background:var(--pass-soft);color:var(--pass);font-size:14px}
+.section{scroll-margin-top:180px}
+.section-head{display:flex;justify-content:space-between;gap:12px;margin:0 4px 12px}
+.section-head h2{margin:3px 0 0;font-size:27px;line-height:1.1}
+.section-blurb{margin:5px 0 0;color:var(--muted);font-size:14px;line-height:1.45}
+.section-kicker.first{color:var(--first)}.section-kicker.exterior{color:var(--exterior)}.section-kicker.interior{color:var(--interior)}
+.group{padding:0 8px 8px;margin-bottom:12px}.group:last-child{margin-bottom:0}
+.group-title{padding:10px 8px 7px}
+.item{border-radius:10px;transition:background .15s ease}
+.item+ .item{border-top:1px solid var(--border);border-radius:0}
+.item.pass{background:var(--pass-soft)}.item.fail{background:var(--fail-soft)}.item.na{opacity:.6}
+.item-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0}
+.item-icon{width:40px;height:40px;flex:none;border-radius:8px;display:grid;place-items:center;font-size:19px}
+.item-icon.first{background:var(--first-soft);color:var(--first)}.item-icon.exterior{background:var(--exterior-soft);color:var(--exterior)}.item-icon.interior{background:var(--interior-soft);color:var(--interior)}
+.item-main{min-width:0;flex:1;border:0;background:transparent;color:var(--fg);text-align:left;padding:5px 0}
+.item-label{display:block;font-size:14px;font-weight:650;line-height:1.35}
+.item-hint{display:block;margin-top:3px;font-size:12px;line-height:1.35;color:var(--muted)}
+.note-saved{display:block;margin-top:5px;font-size:12px;color:var(--first)}
+.status{position:relative;width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated);color:var(--subtle);display:grid;place-items:center;font-size:18px;font-weight:800}
+.status.pass{background:var(--pass);border-color:var(--pass);color:var(--bg-elevated)}
+.status.fail{background:var(--fail);border-color:var(--fail);color:var(--primary-fg)}
+.status.na{background:var(--surface);border-color:transparent}
+.item-details{display:none;padding:0 0 12px 52px}.item.expanded .item-details{display:grid;gap:7px}
+.item-details label{font-size:12px;color:var(--muted);font-weight:650}
+.skip{justify-self:start;border:0;background:transparent;color:var(--muted);padding:7px 0;font-size:12px;font-weight:650}
+.skip:hover{color:var(--fg)}
+.footer-note{text-align:center;color:var(--subtle);font-size:12px;line-height:1.5;padding:0 4px}
+.bottom{position:fixed;z-index:30;left:0;right:0;bottom:0;border-top:1px solid var(--border);background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(14px);padding:10px 16px max(10px,env(safe-area-inset-bottom))}
+.bottom-inner{display:flex;gap:8px;max-width:760px;margin:auto}
+.action{flex:1;min-height:44px;border-radius:9px;border:1px solid var(--border);font-weight:700;font-size:14px}
+.action.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.action.secondary{background:var(--bg-elevated);color:var(--fg)}
+.toast{position:fixed;z-index:50;left:50%;bottom:80px;transform:translateX(-50%) translateY(10px);opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:999px;font-size:13px;transition:.2s ease;box-shadow:var(--shadow)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);padding:20px;align-items:center;justify-content:center}
+.modal.show{display:flex}.dialog{width:min(420px,100%);background:var(--bg-elevated);color:var(--fg);border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.dialog h3{margin:0 0 8px;font-size:18px}.dialog p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.dialog-actions{display:flex;gap:8px;margin-top:18px}.dialog-actions button{flex:1;min-height:42px;border-radius:9px;border:1px solid var(--border);font-weight:700}
+.dialog-reset{background:var(--primary);color:white;border-color:var(--primary)!important}
+@media(max-width:520px){
+  .container{padding-left:12px;padding-right:12px}
+  .vehicle-save{display:none}
+  .two-col{grid-template-columns:1fr}
+  .section-head h2{font-size:24px}
+  .item-row{gap:9px}
+  .item-icon{width:38px;height:38px}
+  .status{width:42px;height:42px}
+  .item-details{padding-left:47px}
+  .bottom{padding-left:10px;padding-right:10px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="container">
+    <div class="toprow">
+      <div class="mark">✓</div>
+      <div class="brand"><div class="eyebrow">Used Tesla</div><h1>Walkaround</h1></div>
+      <div class="progress-ring" aria-label="Inspection progress">
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="progress-bg" cx="22" cy="22" r="20"></circle>
+          <circle id="progressCircle" class="progress-fg" cx="22" cy="22" r="20"></circle>
+        </svg>
+        <span id="progressNumber" class="progress-number">0</span>
+      </div>
+      <button id="themeBtn" class="icon-btn" aria-label="Switch theme">☾</button>
+    </div>
+    <div class="segmentbar" id="segmentbar"></div>
+    <div id="progressText" class="progress-text">0 of 0 inspected</div>
+    <nav id="tabs" class="tabs" aria-label="Checklist sections"></nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="filters" id="filters"></div>
+
+  <section class="card">
+    <button id="vehicleToggle" class="vehicle-toggle" aria-expanded="true">
+      <div class="vehicle-summary">
+        <div class="eyebrow">Vehicle</div>
+        <div id="vehicleValue" class="vehicle-value">Add VIN</div>
+      </div>
+      <span class="vehicle-save">Saved on this device</span>
+      <span id="chevron" class="chevron">⌄</span>
+    </button>
+    <div id="vehicleBody" class="vehicle-body open">
+      <label class="field">VIN
+        <input id="vin" class="vin" maxlength="17" autocomplete="off" placeholder="5YJ…" inputmode="text">
+      </label>
+      <div class="field">Model
+        <div id="models" class="models"></div>
+        <div style="font-size:12px;color:var(--subtle);font-weight:500">S and X-only items skip automatically on 3 and Y.</div>
+      </div>
+      <div class="two-col">
+        <label class="field">Paint
+          <input id="color" placeholder="Pearl White">
+        </label>
+        <label class="field">Date
+          <input id="date" type="date">
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div id="complete" class="complete" hidden></div>
+  <div id="sections"></div>
+  <p class="footer-note">Standalone version of the used Tesla walkaround checklist. Your progress and notes are stored locally in this browser on this device.</p>
+</main>
+
+<div class="bottom">
+  <div class="bottom-inner">
+    <button id="copyBtn" class="action primary">▣ Copy summary</button>
+    <button id="resetBtn" class="action secondary">↻ Reset checks</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+  <div class="dialog">
+    <h3 id="dialogTitle">Reset this walkaround?</h3>
+    <p>Checks and notes will clear. VIN, model, paint, and date stay put. This only affects this device.</p>
+    <div class="dialog-actions">
+      <button id="cancelReset">Keep going</button>
+      <button id="confirmReset" class="dialog-reset">Reset checks</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [{"id": "first", "title": "First", "kicker": "Paperwork", "blurb": "Match the car to the deal before you walk the body.", "groups": [{"id": "first-identity", "title": "Identity & options", "items": [{"id": "first-vin", "label": "VIN matches the paperwork", "hint": "Windshield, door jamb, and title should agree.", "models": []}, {"id": "first-colors", "label": "Correct colors and configurations", "hint": "Paint, interior, wheels, and software options.", "models": []}, {"id": "first-fsd", "label": "Confirm FSD, Autopilot, or Enhanced Autopilot", "hint": "Check Software → Autopilot on the touchscreen.", "models": []}, {"id": "first-warranty", "label": "Check remaining warranty", "hint": "Basic vehicle warranty vs. drivetrain and battery coverage.", "models": []}]}, {"id": "first-kit", "title": "Charge kit & pack", "items": [{"id": "first-umc", "label": "Universal Mobile Connector, adapters, and carry bag", "hint": "Often omitted on used cars. Tesla still sells replacements.", "models": []}, {"id": "first-battery", "label": "Underside battery pack has no damage", "hint": "Look for scrapes, dents, or hanging shields under the car.", "models": []}]}]}, {"id": "exterior", "title": "Exterior", "kicker": "Walkaround", "blurb": "Paint, glass, panels, keys, and lights in daylight.", "groups": [{"id": "ext-paint", "title": "Paint, glass & wheels", "items": [{"id": "ext-surfaces", "label": "Surfaces and underside free of scuffs, marks, or smudges", "hint": null, "models": []}, {"id": "ext-deep-scratches", "label": "Look for deep scratches", "hint": "Catch a fingernail — those need paint, not a polish.", "models": []}, {"id": "ext-transport", "label": "Note minor transport scratches", "hint": "Light marks from shipping are common and usually buff out.", "models": []}, {"id": "ext-glass", "label": "Windshield and all glass free of cracks", "hint": null, "models": []}, {"id": "ext-valves", "label": "All four valve-stem covers are on the tires", "hint": null, "models": []}, {"id": "ext-tread", "label": "Tread depth — penny test on each tire", "hint": "Lincoln’s head buried is healthy. Copper showing is a flag.", "models": []}]}, {"id": "ext-panels", "title": "Panels", "items": [{"id": "ext-alignment", "label": "Panel gaps are functional, even if slightly uneven", "hint": "Tesla gaps can wander. Binding doors or rubbing is not OK.", "models": []}, {"id": "ext-closures", "label": "Doors, hood, and trunk open and close properly", "hint": null, "models": []}, {"id": "ext-roof", "label": "Glass roof panels aligned with no sign of leaks", "hint": "Check headliner stains and weatherstrip pinches.", "models": []}]}, {"id": "ext-keys", "title": "Keys & doors", "items": [{"id": "ext-keycards", "label": "Both key cards work on the B-pillar", "hint": null, "models": []}, {"id": "ext-fob", "label": "Key fob works", "hint": "Model S and X only.", "models": ["S", "X"]}, {"id": "ext-falcon", "label": "All doors open, including falcon-wing rear doors", "hint": "Model S and X only.", "models": ["S", "X"]}]}, {"id": "ext-maint", "title": "Lights & charge port", "items": [{"id": "ext-lights", "label": "All front and rear lights work", "hint": "Hazards, turn signals, brakes, high beams, and fog lights.", "models": []}, {"id": "ext-condensation", "label": "No condensation trapped in the lamps", "hint": null, "models": []}, {"id": "ext-adapters", "label": "Mobile Connector adapters charge, latch, and unlatch cleanly", "hint": null, "models": []}, {"id": "ext-wipers", "label": "Windshield wipers work; hood alignment looks even", "hint": null, "models": []}]}]}, {"id": "interior", "title": "Interior", "kicker": "Cabin", "blurb": "Seats, climate, screens, cameras, and every switch.", "groups": [{"id": "int-seats", "title": "Seats", "items": [{"id": "int-seat-surfaces", "label": "Seat surfaces and undersides free of scuffs or abrasions", "hint": null, "models": []}, {"id": "int-seat-tears", "label": "No seat tears or stubborn smudges", "hint": null, "models": []}, {"id": "int-seat-align", "label": "Rear seats sit aligned", "hint": "A common Model Y issue after folding the bench.", "models": []}]}, {"id": "int-electronics", "title": "Electronics", "items": [{"id": "int-screen", "label": "Touchscreen has no discoloration or dead pixels", "hint": "More common on Model S and X. Check a white and a black screen.", "models": []}, {"id": "int-hvac", "label": "A/C and heat reach full power with no strange noises", "hint": null, "models": []}, {"id": "int-heated", "label": "Heated seats and steering wheel work", "hint": null, "models": []}, {"id": "int-cameras", "label": "Rear backup and side cameras are clear and working", "hint": null, "models": []}, {"id": "int-speakers", "label": "Every speaker plays, with no audio clipping", "hint": null, "models": []}, {"id": "int-windows", "label": "All windows go up and down without noise or binding", "hint": null, "models": []}, {"id": "int-buttons", "label": "Every interior button and control works", "hint": null, "models": []}, {"id": "int-lights", "label": "Interior lights present and working", "hint": "Footwells, puddle lamps, dome, and door lights.", "models": []}, {"id": "int-squeak", "label": "Front seats don’t squeak through their full travel", "hint": "Move every axis. Fold the rears if they fold.", "models": []}, {"id": "int-power", "label": "USB outlets and 12V receptacle have power", "hint": null, "models": []}]}]}];
+
+const MODEL_OPTIONS = [
+  {id:"any",label:"Any"},{id:"3",label:"3"},{id:"Y",label:"Y"},{id:"S",label:"S"},{id:"X",label:"X"}
+];
+const FILTERS = [
+  {id:"all",label:"All"},{id:"left",label:"Left"},{id:"fail",label:"Issues"},{id:"pass",label:"Passed"}
+];
+const SECTION_EMOJI = {first:"▣",exterior:"◇",interior:"⌂"};
+const KEY = "tesla-walkaround-standalone-v1";
+
+const allItems = SECTIONS.flatMap(s=>s.groups.flatMap(g=>g.items));
+const defaultStatuses = ()=>Object.fromEntries(allItems.map(i=>[i.id,"idle"]));
+const today = ()=>new Date().toISOString().slice(0,10);
+
+let state = {
+  vehicle:{vin:"",model:"any",color:"",inspectedAt:today()},
+  statuses:defaultStatuses(),
+  notes:{},
+  filter:"all",
+  theme:"light",
+  expandedId:null,
+  vehicleOpen:true
+};
+
+function load(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(saved){
+      state={...state,...saved,vehicle:{...state.vehicle,...(saved.vehicle||{})}};
+      state.statuses={...defaultStatuses(),...(saved.statuses||{})};
+      state.notes=saved.notes||{};
+    }
+  }catch(e){}
+  applyModelStatuses();
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify({
+    vehicle:state.vehicle,statuses:state.statuses,notes:state.notes,
+    theme:state.theme,vehicleOpen:state.vehicleOpen
+  }))}catch(e){}
+}
+function applyModelStatuses(){
+  for(const item of allItems){
+    const applies=!item.models.length || state.vehicle.model==="any" || item.models.includes(state.vehicle.model);
+    const current=state.statuses[item.id]||"idle";
+    if(!applies && current==="idle") state.statuses[item.id]="na";
+    if(applies && current==="na" && item.models.length) state.statuses[item.id]="idle";
+  }
+}
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function stats(){
+  return SECTIONS.map(section=>{
+    const items=section.groups.flatMap(g=>g.items);
+    const counts={total:items.length,pass:0,fail:0,na:0,idle:0};
+    items.forEach(i=>counts[state.statuses[i.id]||"idle"]++);
+    return {...counts,id:section.id,inspected:counts.pass+counts.fail+counts.na};
+  });
+}
+function totals(rows){
+  return rows.reduce((a,r)=>{for(const k of ["total","pass","fail","na","idle","inspected"])a[k]+=r[k];return a},{total:0,pass:0,fail:0,na:0,idle:0,inspected:0});
+}
+function matches(item){
+  const st=state.statuses[item.id]||"idle";
+  return state.filter==="left"?st==="idle":state.filter==="fail"?st==="fail":state.filter==="pass"?st==="pass":true;
+}
+function renderTop(){
+  const rows=stats(), t=totals(rows), pct=t.total?Math.round(t.inspected/t.total*100):0;
+  document.getElementById("progressNumber").textContent=pct;
+  const c=document.getElementById("progressCircle"), circumference=2*Math.PI*20;
+  c.setAttribute("stroke-dasharray",circumference);
+  c.setAttribute("stroke-dashoffset",circumference-(pct/100)*circumference);
+  document.getElementById("progressText").textContent=`${t.inspected} of ${t.total} inspected${t.fail?` · ${t.fail} issues`:""}${t.idle?` · ${t.idle} left`:""}`;
+  document.getElementById("segmentbar").innerHTML=rows.map(r=>`<div class="seg ${r.id}" style="width:${r.total/t.total*100}%"><div style="width:${r.inspected/r.total*100}%;height:100%;background:var(--${r.id})"></div></div>`).join("");
+  document.getElementById("tabs").innerHTML=SECTIONS.map(s=>{
+    const r=rows.find(x=>x.id===s.id), active=activeSection===s.id;
+    return `<button class="tab ${s.id} ${active?"active":""}" data-section="${s.id}">${s.title} <small>${r.inspected}/${r.total}</small></button>`;
+  }).join("");
+  document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>scrollToSection(b.dataset.section));
+}
+let activeSection="first";
+function scrollToSection(id){
+  activeSection=id; renderTop();
+  document.getElementById("section-"+id)?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function renderFilters(){
+  document.getElementById("filters").innerHTML=FILTERS.map(f=>`<button class="filter ${state.filter===f.id?"active":""}" data-filter="${f.id}">${f.label}</button>`).join("")+
+    `<div class="legend"><span class="dot"></span>To-do <span class="dot pass"></span>Pass <span class="dot fail"></span>Issue</div>`;
+  document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render();});
+}
+function renderVehicle(){
+  const v=state.vehicle;
+  document.getElementById("vehicleValue").textContent=(v.vin||"Add VIN")+(v.model!=="any"?` · ${v.model}`:"")+(v.color?` · ${v.color}`:"");
+  document.getElementById("vin").value=v.vin;
+  document.getElementById("color").value=v.color;
+  document.getElementById("date").value=v.inspectedAt;
+  document.getElementById("vehicleBody").classList.toggle("open",state.vehicleOpen);
+  document.getElementById("vehicleToggle").setAttribute("aria-expanded",state.vehicleOpen);
+  document.getElementById("chevron").classList.toggle("open",state.vehicleOpen);
+  document.getElementById("models").innerHTML=MODEL_OPTIONS.map(m=>`<button class="model ${v.model===m.id?"active":""}" data-model="${m.id}">${m.label}</button>`).join("");
+  document.querySelectorAll("[data-model]").forEach(b=>b.onclick=()=>{state.vehicle.model=b.dataset.model;applyModelStatuses();save();render();});
+}
+function renderSections(){
+  const root=document.getElementById("sections");
+  root.innerHTML="";
+  for(const section of SECTIONS){
+    const visibleGroups=section.groups.map(g=>({...g,items:g.items.filter(matches)})).filter(g=>g.items.length);
+    if(!visibleGroups.length)continue;
+    const sectionEl=document.createElement("section");
+    sectionEl.className="section";sectionEl.id="section-"+section.id;
+    sectionEl.innerHTML=`<div class="section-head"><div>
+      <div class="section-kicker ${section.id}">${esc(section.kicker)}</div>
+      <h2>${esc(section.title)}</h2>
+      <p class="section-blurb">${esc(section.blurb)}</p>
+    </div></div>`;
+    for(const group of visibleGroups){
+      const card=document.createElement("div");card.className="card group";
+      card.innerHTML=`<div class="group-title">${esc(group.title)}</div>`;
+      const list=document.createElement("div");
+      group.items.forEach(item=>{
+        const status=state.statuses[item.id]||"idle", expanded=state.expandedId===item.id, note=(state.notes[item.id]||"").trim();
+        const glyph=status==="pass"?"✓":status==="fail"?"×":status==="na"?"−":"";
+        const row=document.createElement("div");
+        row.className=`item ${status} ${expanded?"expanded":""}`;
+        row.innerHTML=`<div class="item-row">
+          <div class="item-icon ${section.id}">${SECTION_EMOJI[section.id]}</div>
+          <button class="item-main" aria-expanded="${expanded}">
+            <span class="item-label">${esc(item.label)}</span>
+            ${item.hint?`<span class="item-hint">${esc(item.hint)}</span>`:""}
+            ${note&&!expanded?`<span class="note-saved">▱ Note saved</span>`:""}
+          </button>
+          <button class="status ${status}" aria-label="${esc(item.label)}" title="Tap to cycle">${glyph}</button>
+        </div>
+        <div class="item-details">
+          <label for="note-${item.id}">Notes</label>
+          <textarea id="note-${item.id}" rows="2" placeholder="What did you see?">${esc(state.notes[item.id]||"")}</textarea>
+          <button class="skip">${status==="na"?"Mark as applicable":"Skip — not applicable"}</button>
+        </div>`;
+        row.querySelector(".item-main").onclick=()=>{
+          state.expandedId=state.expandedId===item.id?null:item.id;renderSections();
+        };
+        row.querySelector(".status").onclick=()=>{
+          const order=["idle","pass","fail"], cur=state.statuses[item.id]||"idle";
+          state.statuses[item.id]=cur==="na"?"idle":order[(order.indexOf(cur)+1)%3];
+          if(state.statuses[item.id]==="fail")state.expandedId=item.id;
+          save();render();
+        };
+        const ta=row.querySelector("textarea");
+        ta.oninput=()=>{state.notes[item.id]=ta.value;save();};
+        row.querySelector(".skip").onclick=()=>{
+          state.statuses[item.id]=(state.statuses[item.id]||"idle")==="na"?"idle":"na";
+          save();render();
+        };
+        list.appendChild(row);
+      });
+      card.appendChild(list);sectionEl.appendChild(card);
+    }
+    root.appendChild(sectionEl);
+  }
+}
+function renderComplete(){
+  const t=totals(stats()), el=document.getElementById("complete");
+  if(t.idle===0){
+    el.hidden=false;
+    el.textContent=t.fail?`Walkaround complete — ${t.fail} issue${t.fail===1?"":"s"} to discuss.`:"Walkaround complete — no issues flagged.";
+  }else el.hidden=true;
+}
+function render(){
+  document.documentElement.classList.toggle("dark",state.theme==="dark");
+  document.getElementById("themeBtn").textContent=state.theme==="dark"?"☀":"☾";
+  renderTop();renderFilters();renderVehicle();renderSections();renderComplete();
+}
+function summary(){
+  const t=totals(stats()), v=state.vehicle;
+  const lines=["WALKAROUND — Used Tesla inspection",v.vin?`VIN ${v.vin}`:"VIN not entered",
+    [`${v.model==="any"?"Any model":"Model "+v.model}`,v.color||null,v.inspectedAt||null].filter(Boolean).join(" · "),
+    `${t.pass} passed · ${t.fail} issues · ${t.idle} left · ${t.na} skipped`,""];
+  const issues=allItems.filter(i=>(state.statuses[i.id]||"idle")==="fail");
+  const remaining=allItems.filter(i=>(state.statuses[i.id]||"idle")==="idle");
+  if(issues.length){lines.push("ISSUES");issues.forEach(i=>{lines.push(`• ${i.label}`);const n=(state.notes[i.id]||"").trim();if(n)lines.push(`  ${n}`)});lines.push("")}
+  if(remaining.length){lines.push("STILL TO CHECK");remaining.forEach(i=>lines.push(`• ${i.label}`))}
+  return lines.join("\n").trim();
+}
+function toast(msg){
+  const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");
+  clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove("show"),1800);
+}
+
+document.getElementById("themeBtn").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";save();render();};
+document.getElementById("vehicleToggle").onclick=()=>{state.vehicleOpen=!state.vehicleOpen;save();renderVehicle();};
+document.getElementById("vin").oninput=e=>{state.vehicle.vin=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,17);save();renderVehicle();};
+document.getElementById("color").oninput=e=>{state.vehicle.color=e.target.value;save();renderVehicle();};
+document.getElementById("date").oninput=e=>{state.vehicle.inspectedAt=e.target.value;save();renderVehicle();};
+document.getElementById("copyBtn").onclick=async()=>{
+  try{await navigator.clipboard.writeText(summary());toast("Summary copied");}
+  catch(e){toast("Copy failed — select and copy manually");}
+};
+document.getElementById("resetBtn").onclick=()=>document.getElementById("modal").classList.add("show");
+document.getElementById("cancelReset").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.getElementById("confirmReset").onclick=()=>{
+  state.statuses=defaultStatuses();state.notes={};state.expandedId=null;state.filter="all";applyModelStatuses();
+  save();document.getElementById("modal").classList.remove("show");render();toast("Checks cleared");
+};
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.currentTarget.classList.remove("show");};
+
+let observer;
+function setupObserver(){
+  observer?.disconnect();
+  observer=new IntersectionObserver(entries=>{
+    const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+    if(visible){const id=visible.target.id.replace("section-","");if(id!==activeSection){activeSection=id;renderTop();}}
+  },{rootMargin:"-28% 0px -58% 0px",threshold:[.1,.35,.6]});
+  document.querySelectorAll(".section").forEach(el=>observer.observe(el));
+}
+
+load();render();setupObserver();
+</script>
+</body>
+</html>
